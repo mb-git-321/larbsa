@@ -18,17 +18,19 @@ from algorithms.m8ps import heuristic as magnetic8Prunedspace
 from algorithms.lee import lee_algorithm
 from algorithms.a2 import astar_algorithm
 from algorithms.da2 import dual_astar_algorithm
+
+from algorithms.rrt import rrtRunner
+
 import secrets
 import tracemalloc
 
-def runSingleTest (algorithm='magnetic', start=(0, 0), end=(1, 1), barriers={}, comment=True):
+def runSingleTest (algorithm='magnetic', start=(0, 0), end=(1, 1), barriers={}, gridSize=100, comment=True):
     
     originalBarriers = barriers.copy()
     
     path = []
     
     message = ''
-    
     if algorithm == 'da2':
         tracemalloc.start()
         tracemalloc.take_snapshot()
@@ -127,6 +129,16 @@ def runSingleTest (algorithm='magnetic', start=(0, 0), end=(1, 1), barriers={}, 
         endTime = timer()
         (_, maxMemory) = tracemalloc.get_traced_memory()
         tracemalloc.stop()      
+
+    elif algorithm == 'rrt':
+        tracemalloc.start()
+        tracemalloc.take_snapshot()
+        startTime = timer()
+        ( path, visits ) = rrtRunner(start, end, originalBarriers, gridSize, maxIterations=1000000)
+        endTime = timer()
+        (_, maxMemory) = tracemalloc.get_traced_memory()
+        tracemalloc.stop()
+    
     else:
         startTime = 0
         endTime = 0
@@ -181,7 +193,7 @@ def runMultipleTest (testType='robustness', algorithms=['sh', 'shp', 'm4', 'm4Py
         added = 0
         for alg in algorithms:
             try:
-                results = runSingleTest (alg, start, end, barriers, False)
+                results = runSingleTest (alg, start, end, barriers, gridSize, False)
             except:
                 restart = True
                 dissmissedCsv.append(f'{alg},{foundBarriers[barrierString]}')
@@ -242,3 +254,7 @@ for k in range(1, 31):
     runSingleTest('mg5', start, end, barriers, animate=False) # dual version
 
 '''
+
+# For random sample
+(start, end, barriers) = produceRandomMaze(1, gridSize)
+runSingleTest('rrt', start, end, barriers, animate=False) # dual version
