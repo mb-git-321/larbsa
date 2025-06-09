@@ -11,7 +11,7 @@
     <title>Document</title>
     <script>
         const socket = io('http://localhost:9000');
-      
+
         socket.on('connect', () => {
             console.log('Connected to Socket.IO server');
         });
@@ -27,11 +27,9 @@
                     opt.selected = true
                 }
                 selectContainer.appendChild(opt)
-            }            
+            }
         }
 
-    //   // Handle 'message' event
-       
     </script>
 
     <style>
@@ -63,7 +61,7 @@
     </style>
 </head>
 <body>
-    
+
     <form id="control-hub">
         <div>
         <label>Algorithms:</label>
@@ -82,6 +80,8 @@
             <option value="Lee algorithm">Lee algorithm</option>
             <option value="A* algorithm">A* algorithm</option>
             <option value="Dual A* algorithm">Dual A* algorithm</option>
+
+            <option value="RRT">RRT</option>
             <script>
                 let selector = document.querySelector('#algorithm-selector')
                 selector.addEventListener('change', (event)=> {
@@ -122,17 +122,17 @@
             <script>
                 populateWithContent('#robustness-levels', 1, 30)
             </script>
-        </select>  
-        </div>      
+        </select>
+        </div>
         <div>
         <label>Grid size:</label>
         <select id="grid-size">
             <script>
                 populateWithContent('#grid-size', 5, 100)
             </script>
-        </select>  
+        </select>
         </div>
-        
+
         <div>
             <label>Seed:</label>
             <select id="seed-value">
@@ -141,7 +141,7 @@
                 <script>
                     populateWithContent('#seed-value', 1, 1000)
                 </script>
-            </select>  
+            </select>
         </div>
 
         <div>
@@ -150,8 +150,8 @@
                 <script>
                     populateWithContent('#delay-value', 0, 1000, 10)
                 </script>
-            </select>  
-        </div>        
+            </select>
+        </div>
 
         <button id="run-button" type="button" style="height:fit-content">Play</button>
         <script>
@@ -169,7 +169,7 @@
                 for (let k = 0; k < children.length; k++) {
                     let child = children[k]
                     let name = child.innerText
-                    
+
                     if (name==='Single Instance Lee algorithm') algorithms.push('sh')
                     if (name==='Single Instance Lee algorithm (Pruned)') algorithms.push('shp')
                     if (name==='Magnetic Algorithm 4 Options') algorithms.push('m4')
@@ -181,6 +181,7 @@
                     if (name==='Lee algorithm') algorithms.push('lee')
                     if (name==='A* algorithm') algorithms.push('a2')
                     if (name==='Dual A* algorithm') algorithms.push('da2')
+                    if (name==='RRT') algorithms.push('rrt')
 
                 }
 
@@ -188,26 +189,25 @@
                     alert('No algorithms selected...')
                     return;
                 }
-                
+
                 let testTypeContainer = document.querySelector('#test-type')
                 let testType = testTypeContainer.value.toLowerCase()
 
                 let rosbustnessLevelContainer = document.querySelector('#robustness-levels')
                 let rosbustnessLevel = parseInt(rosbustnessLevelContainer.value)
-                
+
                 let gridSizeContainer = document.querySelector('#grid-size')
                 let gridSize = parseInt(gridSizeContainer.value)
 
                 let seedValueContainer = document.querySelector('#seed-value')
                 let seedValue = seedValueContainer.value
                 if (seedValue == 'random')
-                    seedValue = undefined 
+                    seedValue = undefined
                 else if (seedValue == 'random-2'){
                     value = getRandomInteger(0, 1000)
                     seedValue = value
-                    console.log(value)
                     seedValueContainer.children[2+value].selected = true
-                }     
+                }
                 else
                     seedValue = parseInt(seedValue)
 
@@ -216,9 +216,9 @@
 
 
                 let obj = { testType, rosbustnessLevel, gridSize, algorithms , nonprocessing:true, seedValue, delay:delayValue }
-                
+
                 socket.emit('message', obj)
-                
+
             })
         </script>
         <p id="currentcord">current cord: </p>
@@ -244,14 +244,14 @@
             // ctx.clearRect(0, 0, 0, 40)
             // ctx.fillText(i+","+j, 30, 30);
             // return i+":"+j
-            // 
+            //
             document.querySelector('#currentcord').innerText = `Cords: ${i}, ${j}`
         }
 
     const mapInformation = ({canvas, ctx, barriers, path, visited, gridSize}) => {
         const blockSize = canvas.height / gridSize
 
-        ctx.fillStyle = '#fff' 
+        ctx.fillStyle = '#fff'
         ctx.fillRect( 0, 0, canvas.width, canvas.height )
         canvas.onmousemove = function(e) {
             onInput(e, ctx, blockSize)
@@ -285,7 +285,7 @@
                 // const blockD2 = blockSize*0.7
                 // const blockPadding = blockSize*0.3/4 +
                 ctx.fillRect( j*blockSize, i*blockSize, blockSize, blockSize )
-            }   
+            }
         }
 
     }
@@ -295,7 +295,7 @@
     const data = {
         // 0: {
         //     id:0, blockers:{}, path:{}, visits:{}, gridSize:50, meta:{name:'A* algorithm', runtime:'something...'}
-        // },                      
+        // },
     }
 
     const produceSingleContentFromScratch = content => {
@@ -320,7 +320,7 @@
         parent.appendChild(canvas)
         parent.appendChild(informationDiv)
         document.body.appendChild(parent)
-        mapInformation(content)        
+        mapInformation(content)
     }
 
     const produceEntireContent = () => {
@@ -346,9 +346,7 @@
                 }else{
                     data[id][newKey] = newInformation[newKey]
                 }
-            }    
-            // console.log('meta')
-            // console.log()
+            }
             const meta = data[id].meta
             const innerInformation = document.querySelector('#inner'+id)
             innerInformation.innerHTML = ''
@@ -385,9 +383,9 @@
             numberOfItems = 2
         }
         defaultHeight = window.innerHeight /(numberOfItems)
-        defaultWidth = window.innerHeight /(numberOfItems)  
+        defaultWidth = window.innerHeight /(numberOfItems)
         // document.body.innerHTML = ''
-        produceEntireContent()        
+        produceEntireContent()
     }
 
     window.addEventListener('resize', ()=>{
@@ -399,7 +397,7 @@
     socket.on('message', (incoming) => {
         if (incoming.hasOwnProperty('nonprocessing')) return
         updateSingleItem(data, incoming)
-    }); 
+    });
 
 
     </script>

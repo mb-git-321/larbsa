@@ -1,91 +1,126 @@
 import random
 import math
 import matplotlib.pyplot as plt
+import time
+import sys
 
 # Utility Functions
-def create_node(x, y, parent=None):
-    return {'x': x, 'y': y, 'parent': parent}
+def create_node(x, y):
+    return (x, y)
 
 def distance(n1, n2):
-    return math.hypot(n1['x'] - n2['x'], n1['y'] - n2['y'])
+    return math.hypot(math.floor(n1['x'] - n2['x']), math.floor(n1['y'] - n2['y']))
 
-def random_position(x_limit, y_limit):
-    return create_node(random.uniform(0, x_limit), random.uniform(0, y_limit))
+def distance(n1, n2):
+    return math.hypot(n1['x'] - n2['x']),
 
-def is_in_obstacle(point, obstacles):
-    for (ox, oy, r) in obstacles:
-        if math.hypot(point['x'] - ox, point['y'] - oy) <= r:
-            return True
-    return False
+
+def getRandomPoint(limit):
+    return math.floor(random.uniform(0, limit))
+
+def getRandomPosition(x_limit, y_limit):
+    x = getRandomPoint(x_limit)
+    y = getRandomPoint(y_limit)
+    return (x, y)
+
+def isObstacle(point, obstacles, r=1):
+    return point in obstacles
 
 def nearest_node(tree, new_node):
     return min(tree, key=lambda n: distance(n, new_node))
 
-def steer(from_node, to_node, step_size):
-    dist = distance(from_node, to_node)
-    if dist < step_size:
-        return to_node
-    theta = math.atan2(to_node['y'] - from_node['y'], to_node['x'] - from_node['x'])
-    new_x = from_node['x'] + step_size * math.cos(theta)
-    new_y = from_node['y'] + step_size * math.sin(theta)
-    return create_node(new_x, new_y, parent=from_node)
-
-def is_goal(node, goal_center, goal_radius):
-    return distance(node, goal_center) <= goal_radius
-
-def draw_path(node):
+def findPath (parents, start, end):
     path = []
-    while node:
-        path.append((node['x'], node['y']))
-        node = node['parent']
+    current = end
+    while current != start:
+        path.append(current)
+        if current not in parents:
+            return path
+        current = parents[current]
+    path.append(start)
     return path[::-1]
 
-def plot_rrt(tree, path, start, goal_center, goal_radius, obstacles):
+def convertTreeToUniqueList (tree):
+    obj = {}
     for node in tree:
-        if node['parent']:
-            plt.plot([node['x'], node['parent']['x']],
-                     [node['y'], node['parent']['y']], "-g")
+        obj[f"{node[0]}:{node[1]}"] = None
+    return obj
 
-    if path:
-        px, py = zip(*path)
-        plt.plot(px, py, "-r", linewidth=2)
+def nodeIsValid (parents, node, obstacles, xLimit, yLimit):
+    if node in obstacles:
+        return False
+    if node[0] > xLimit or node[1] > yLimit:
+        return False
+    if node in parents:
+        return False
+    return True
 
-    plt.plot(start['x'], start['y'], "bo", label="Start")
-    plt.plot(goal_center['x'], goal_center['y'], "ro", label="Goal Center")
-    plt.gca().add_patch(plt.Circle((goal_center['x'], goal_center['y']), goal_radius, color='r', alpha=0.3))
+def sendData (socketInformation, parents, startNode, goalNode):
 
-    for ox, oy, r in obstacles:
-        plt.gca().add_patch(plt.Circle((ox, oy), r, color='k', alpha=0.5))
+    if socketInformation == None:
+        return
 
-    plt.axis('equal')
-    plt.grid(True)
-    plt.title("Functional RRT Path Planning")
-    plt.legend()
-    plt.show()
+    if 'io' not in socketInformation:
+        return
 
-# Main RRT Function
-def rrt(start, goal_center, goal_radius, obstacles, x_limit, y_limit, max_iter=500, step_size=10):
-    tree = [start]
-    for _ in range(max_iter):
-        rnd = random_position(x_limit, y_limit)
-        if is_in_obstacle(rnd, obstacles):
+    path = findPath(parents, startNode, goalNode) if goalNode else []
+    path = convertTreeToUniqueList(path)
+
+    parentStringEdition = convertTreeToUniqueList(parents)
+
+    if 'sleepDuration' in socketInformation:
+        time.sleep(socketInformation['sleepDuration'])
+
+    socketInformation['io'].emit('message', {
+        'path':path,
+        'visited': parentStringEdition,
+        'gridSize': socketInformation.get('gridSize'),
+        'barriers': socketInformation.get('stringBarriers'),
+        'meta':
+        {   'algorithm':'RRT',
+            'visitSize':len(parents),
+            'gridSize':socketInformation.get('gridSize'),
+            'id':socketInformation.get('id'),
+            'path':path,
+            'barriers':socketInformation.get('stringBarriers'),
+            'visited': parentStringEdition
+        }
+    })
+
+def distanceApart (cordA, cordB):
+    return abs(cordA[0]-cordB[0]) + abs(cordA[1]-cordB[1])
+
+def findNearestParent (parents, startNode, node):
+    maxDistance = distanceApart(startNode, node)
+    closestNode = startNode
+
+    for parent in parents:
+        distance = distanceApart(parent, node)
+        if distance < maxDistance:
+            closestNode = parent
+            maxDistance = distance
+
+    return closestNode
+
+def rrt (parentBlock, start, end, obstacles, gridSize, maxIterations, socketInformation=None):
+    index = 0
+    while index <= maxIterations:
+        index+=1
+        newRandomPosition = getRandomPosition(gridSize, gridSize)
+        parentNode = findNearestParent(parentBlock, start, newRandomPosition)
+        valid = nodeIsValid(parentBlock, newRandomPosition, obstacles, gridSize, gridSize)
+        if not valid:
             continue
-        nearest = nearest_node(tree, rnd)
-        new_node = steer(nearest, rnd, step_size)
-        if is_in_obstacle(new_node, obstacles):
-            continue
-        tree.append(new_node)
-        if is_goal(new_node, goal_center, goal_radius):
-            print("Goal reached!")
-            return tree, new_node
-    print("Goal not reached.")
-    return tree, None
+        parentBlock[newRandomPosition] = parentNode
+        sendData(socketInformation, parentBlock, start, newRandomPosition)
+        if newRandomPosition == end:
+            break
 
-def rrtRunner (start, end, obstacles, gridSize):
-    start = create_node(start[0], start[1])
-    goal_center = create_node(end[0], end[1])
-    goal_radius = 1
-    x_limit, y_limit = gridSize, gridSize
-    tree, goal_node = rrt(start, goal_center, goal_radius, obstacles, x_limit, y_limit)
-    path = draw_path(goal_node) if goal_node else None
-    return path, tree
+    return {}, end
+
+
+def rrtRunner (start, end, obstacles, gridSize, maxIterations, socketInformation=None):
+    parentBlock = {}
+    rrt(parentBlock, start, end, obstacles, gridSize, maxIterations, socketInformation)
+    path = findPath (parentBlock, start, end)
+    return path, parentBlock

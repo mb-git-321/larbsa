@@ -1,10 +1,9 @@
 import sys
 import random
-sys.path.append("/Users/momodoubah/research/catkin_ws/src/mitad/src")
+# sys.path.append("/Users/momodoubah/research/catkin_ws/src/mitad/src")
 from utility.util import sendRaw, convertIntoKeysRaw
 from utility.turn import getDistance
-from algorithms.automate.prims import produceMaze
-
+from automate.prims import produceMaze
 
 def convertMazeIntoBlocks (maze, dimensions=10, blockMode=True):
     blocks = {}

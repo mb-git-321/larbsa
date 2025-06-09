@@ -25,11 +25,11 @@ import secrets
 import tracemalloc
 
 def runSingleTest (algorithm='magnetic', start=(0, 0), end=(1, 1), barriers={}, gridSize=100, comment=True):
-    
+
     originalBarriers = barriers.copy()
-    
+
     path = []
-    
+
     message = ''
     if algorithm == 'da2':
         tracemalloc.start()
@@ -74,7 +74,7 @@ def runSingleTest (algorithm='magnetic', start=(0, 0), end=(1, 1), barriers={}, 
         ( path, visits ) = singlePruned(start, end, originalBarriers)
         endTime = timer()
         (_, maxMemory) = tracemalloc.get_traced_memory()
-        tracemalloc.stop()        
+        tracemalloc.stop()
 
     elif algorithm == 'm4':
         tracemalloc.start()
@@ -83,7 +83,7 @@ def runSingleTest (algorithm='magnetic', start=(0, 0), end=(1, 1), barriers={}, 
         ( path, visits, message ) = magnetic4(start, end, originalBarriers, maxIterations=10000000000)
         endTime = timer()
         (_, maxMemory) = tracemalloc.get_traced_memory()
-        tracemalloc.stop()  
+        tracemalloc.stop()
 
     elif algorithm == 'm4Pythag':
         tracemalloc.start()
@@ -92,7 +92,7 @@ def runSingleTest (algorithm='magnetic', start=(0, 0), end=(1, 1), barriers={}, 
         ( path, visits, message ) = magenticPythag(start, end, originalBarriers)
         endTime = timer()
         (_, maxMemory) = tracemalloc.get_traced_memory()
-        tracemalloc.stop()  
+        tracemalloc.stop()
 
     elif algorithm == 'm8':
         tracemalloc.start()
@@ -101,7 +101,7 @@ def runSingleTest (algorithm='magnetic', start=(0, 0), end=(1, 1), barriers={}, 
         ( path, visits, message ) = magnetic8(start, end, originalBarriers)
         endTime = timer()
         (_, maxMemory) = tracemalloc.get_traced_memory()
-        tracemalloc.stop() 
+        tracemalloc.stop()
 
     elif algorithm == 'm4p':
         tracemalloc.start()
@@ -119,7 +119,7 @@ def runSingleTest (algorithm='magnetic', start=(0, 0), end=(1, 1), barriers={}, 
         ( path, visits, message ) = magnetic4PrunedSpace(start, end, originalBarriers, maxIterations=10000000000)
         endTime = timer()
         (_, maxMemory) = tracemalloc.get_traced_memory()
-        tracemalloc.stop()        
+        tracemalloc.stop()
 
     elif algorithm == 'm8ps':
         tracemalloc.start()
@@ -128,17 +128,17 @@ def runSingleTest (algorithm='magnetic', start=(0, 0), end=(1, 1), barriers={}, 
         ( path, visits, message ) = magnetic8Prunedspace(start, end, originalBarriers, maxIterations=10000000000)
         endTime = timer()
         (_, maxMemory) = tracemalloc.get_traced_memory()
-        tracemalloc.stop()      
+        tracemalloc.stop()
 
     elif algorithm == 'rrt':
         tracemalloc.start()
         tracemalloc.take_snapshot()
         startTime = timer()
-        ( path, visits ) = rrtRunner(start, end, originalBarriers, gridSize, maxIterations=1000000)
+        ( path, visits ) = rrtRunner(start, end, originalBarriers, gridSize, maxIterations=gridSize*gridSize)
         endTime = timer()
         (_, maxMemory) = tracemalloc.get_traced_memory()
         tracemalloc.stop()
-    
+
     else:
         startTime = 0
         endTime = 0
@@ -161,13 +161,13 @@ def runMultipleTest (testType='robustness', algorithms=['sh', 'shp', 'm4', 'm4Py
     foundBarriers = {}
     iteration = 100000 if overrideIterations == None else overrideIterations
     metrics = [ 'algorithm', 'numberOfRightAngleTurns', 'visitExcess', 'duration', 'pathSize', 'maxMemory' ]
-    
+
     if includeMessage:
         metrics.append('message')
     csv = ','.join(metrics)
-    
+
     csv+=',start,end,barrierID,roundID,path'
-    
+
     dissmissedCsv=[]
     bar = Bar('Processing', max=iteration)
     while iteration > 0:
@@ -223,18 +223,18 @@ def runMultipleTest (testType='robustness', algorithms=['sh', 'shp', 'm4', 'm4Py
         plain = "id,map,success,start,end"
         for map in foundBarriers:
             plain += f'\n{foundBarriers[map]["id"]},{encodeArray(map)},{"yes" if foundBarriers[map]["success"] else "no"},{foundBarriers[map]["start"]},{foundBarriers[map]["end"]}'
-        f.write(plain)        
+        f.write(plain)
 
 # '''
 
-    # If you want to run multiple algorithms, side by side and get their results, use the following code 
+    # If you want to run multiple algorithms, side by side and get their results, use the following code
     # Run all three 4 lines for complete test
 
-gridSize = 100
-runMultipleTest(testType='optimality', overrideIterations=100000, gridSize=gridSize, extensionName='1')
-runMultipleTest(testType='efficiency', overrideIterations=100000, gridSize=gridSize, extensionName='1')
-for k in range(1, 31):
-    runMultipleTest(testType='robustness', overrideIterations=1000, robustnessPercentage=k, extensionName=f'{k}%', gridSize=gridSize)
+gridSize = 50
+# runMultipleTest(testType='optimality', overrideIterations=100000, gridSize=gridSize, extensionName='1')
+# runMultipleTest(testType='efficiency', overrideIterations=100000, gridSize=gridSize, extensionName='1')
+# for k in range(1, 31):
+#     runMultipleTest(testType='robustness', overrideIterations=1000, robustnessPercentage=k, extensionName=f'{k}%', gridSize=gridSize)
 
 # '''
 
@@ -250,11 +250,14 @@ for k in range(1, 31):
 
     # For optimality sampe
     # (start, end, barriers) = optimalityGrid(gridSize)
-    
+
     runSingleTest('mg5', start, end, barriers, animate=False) # dual version
 
 '''
 
 # For random sample
 (start, end, barriers) = produceRandomMaze(1, gridSize)
-runSingleTest('rrt', start, end, barriers, animate=False) # dual version
+runSingleTest('rrt', start, end, barriers) # dual version
+runSingleTest('lee', start, end, barriers) # dual version
+runSingleTest('m4', start, end, barriers) # dual version
+runSingleTest('a2', start, end, barriers) # dual version

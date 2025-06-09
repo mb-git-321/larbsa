@@ -17,6 +17,8 @@ from algorithms.lee import lee_algorithm
 from algorithms.a2 import astar_algorithm
 from algorithms.da2 import dual_astar_algorithm
 
+from algorithms.rrt import rrtRunner
+
 import tracemalloc
 import socketio
 import threading
@@ -37,18 +39,18 @@ def on_message(data):
     if runningFunction:
         return
     if 'nonprocessing' not in data:
-        return 
+        return
     runComponents (data['algorithms'], data['gridSize'], data['rosbustnessLevel'], data['testType'], None if 'seedValue' not in data else data['seedValue'], 0.05 if 'delay' not in data else data['delay'])
 
 event_thread = threading.Thread(target=sio.wait)
 event_thread.start()
 
-def runSingleTest (algorithm='magnetic', start=(0, 0), end=(1, 1), barriers={}, socketInformation=None):
+def runSingleTest (algorithm='magnetic', start=(0, 0), end=(1, 1), barriers={}, socketInformation=None, gridSize=50):
     originalBarriers = barriers.copy()
     path = []
     message = ''
     # barriers = getAreaMeta(barriers, areaSize) if algorithm == 'magnetic' or algorithm == 'lee' or algorithm == 'mg6' else barriers
-    
+
     if algorithm == 'da2':
         tracemalloc.start()
         tracemalloc.take_snapshot()
@@ -92,7 +94,7 @@ def runSingleTest (algorithm='magnetic', start=(0, 0), end=(1, 1), barriers={}, 
         ( path, visits ) = singlePruned(start, end, originalBarriers, socketInformation=socketInformation)
         endTime = timer()
         (_, maxMemory) = tracemalloc.get_traced_memory()
-        tracemalloc.stop()        
+        tracemalloc.stop()
 
     elif algorithm == 'm4':
         tracemalloc.start()
@@ -101,7 +103,7 @@ def runSingleTest (algorithm='magnetic', start=(0, 0), end=(1, 1), barriers={}, 
         ( path, visits, message ) = magnetic4(start, end, barriers, maxIterations=10000000000, socketInformation=socketInformation)
         endTime = timer()
         (_, maxMemory) = tracemalloc.get_traced_memory()
-        tracemalloc.stop()  
+        tracemalloc.stop()
 
     elif algorithm == 'm4Pythag':
         tracemalloc.start()
@@ -110,7 +112,7 @@ def runSingleTest (algorithm='magnetic', start=(0, 0), end=(1, 1), barriers={}, 
         ( path, visits, message ) = magenticPythag(start, end, barriers)
         endTime = timer()
         (_, maxMemory) = tracemalloc.get_traced_memory()
-        tracemalloc.stop()  
+        tracemalloc.stop()
 
     elif algorithm == 'm8':
         tracemalloc.start()
@@ -119,7 +121,7 @@ def runSingleTest (algorithm='magnetic', start=(0, 0), end=(1, 1), barriers={}, 
         ( path, visits, message ) = magnetic8(start, end, barriers, socketInformation=socketInformation)
         endTime = timer()
         (_, maxMemory) = tracemalloc.get_traced_memory()
-        tracemalloc.stop() 
+        tracemalloc.stop()
 
     elif algorithm == 'm4p':
         tracemalloc.start()
@@ -137,7 +139,7 @@ def runSingleTest (algorithm='magnetic', start=(0, 0), end=(1, 1), barriers={}, 
         ( path, visits, message ) = magnetic4PrunedSpace(start, end, barriers, maxIterations=10000000000, socketInformation=socketInformation)
         endTime = timer()
         (_, maxMemory) = tracemalloc.get_traced_memory()
-        tracemalloc.stop()        
+        tracemalloc.stop()
 
     elif algorithm == 'm8ps':
         tracemalloc.start()
@@ -146,8 +148,17 @@ def runSingleTest (algorithm='magnetic', start=(0, 0), end=(1, 1), barriers={}, 
         ( path, visits, message ) = magnetic8Prunedspace(start, end, barriers, maxIterations=10000000000, socketInformation=socketInformation)
         endTime = timer()
         (_, maxMemory) = tracemalloc.get_traced_memory()
-        tracemalloc.stop()         
-      
+        tracemalloc.stop()
+
+    elif algorithm == 'rrt':
+        tracemalloc.start()
+        tracemalloc.take_snapshot()
+        startTime = timer()
+        ( path, visits ) = rrtRunner(start, end, originalBarriers, gridSize, maxIterations=gridSize*gridSize*gridSize, socketInformation=socketInformation)
+        endTime = timer()
+        (_, maxMemory) = tracemalloc.get_traced_memory()
+        tracemalloc.stop()
+
     else:
         startTime = 0
         endTime = 0
@@ -166,9 +177,9 @@ def runSingleTest (algorithm='magnetic', start=(0, 0), end=(1, 1), barriers={}, 
     return results
 
 def runComponents (algorithms=[], gridSize=50, rosbustnessLevel=20, testType='robustness', seedValue=None, delay=0.05):
-    
+
     global runningFunction
-    
+
     print('Triggered by socket to run algorithms in parallel...')
 
     runningFunction = True
@@ -185,7 +196,7 @@ def runComponents (algorithms=[], gridSize=50, rosbustnessLevel=20, testType='ro
     for i in range(len(algorithms)):
         algo = algorithms[i]
         socketInfo = { 'id':i, 'io':sio, 'sleepDuration':delay/1000, 'stringBarriers':stringBarriers, 'gridSize':gridSize }
-        t1 = threading.Thread(target=runSingleTest, args=(algo, start, end, barriers, socketInfo))
+        t1 = threading.Thread(target=runSingleTest, args=(algo, start, end, barriers, socketInfo, gridSize))
         threadObjects.append(t1)
 
     for thr in threadObjects:
@@ -196,10 +207,10 @@ def runComponents (algorithms=[], gridSize=50, rosbustnessLevel=20, testType='ro
 
     for i in range(len(algorithms)):
         algo = algorithms[i]
-        results = runSingleTest(algo, start, end, barriers, None)
+        results = runSingleTest(algo, start, end, barriers, None, gridSize)
         if results == None:
             continue
 
         sio.emit('message', { 'meta':{ 'maxMemory': str(turnIntoKiloBytes(results['maxMemory'])) + ' kb' , 'real run time':str( convertTo2Dp(results['duration']*1000) ) + 'milli-seconds' }, 'id':i })
-        
+
     runningFunction = False
