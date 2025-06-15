@@ -165,7 +165,7 @@ def runSingleIteration (currentInfo, queue, reserves, visitedTrace, vistedNext, 
     bestCord = None
 
     for opt in options:
-        fitness = abs(opt[0] - end[0]) + abs(opt[1] - end[1]) 
+        fitness = abs(opt[0] - end[0]) + abs(opt[1] - end[1])
         if fitness < bestFitness:
             bestFitness = fitness
             bestCord = opt

@@ -82,6 +82,8 @@
             <option value="Dual A* algorithm">Dual A* algorithm</option>
 
             <option value="RRT">RRT</option>
+
+            <option value="JPS">JPS</option>
             <script>
                 let selector = document.querySelector('#algorithm-selector')
                 selector.addEventListener('change', (event)=> {
@@ -182,6 +184,7 @@
                     if (name==='A* algorithm') algorithms.push('a2')
                     if (name==='Dual A* algorithm') algorithms.push('da2')
                     if (name==='RRT') algorithms.push('rrt')
+                    if (name==='JPS') algorithms.push('jps')
 
                 }
 

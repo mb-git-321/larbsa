@@ -71,21 +71,23 @@ def sendData (socketInformation, parents, startNode, goalNode):
     if 'sleepDuration' in socketInformation:
         time.sleep(socketInformation['sleepDuration'])
 
-    socketInformation['io'].emit('message', {
-        'path':path,
-        'visited': parentStringEdition,
-        'gridSize': socketInformation.get('gridSize'),
-        'barriers': socketInformation.get('stringBarriers'),
-        'meta':
-        {   'algorithm':'RRT',
-            'visitSize':len(parents),
-            'gridSize':socketInformation.get('gridSize'),
-            'id':socketInformation.get('id'),
-            'path':path,
-            'barriers':socketInformation.get('stringBarriers'),
-            'visited': parentStringEdition
-        }
-    })
+    socketInformation['io'].emit('message', { 'meta':{'algorithm':'RRT',  'visitSize':len(parents) }, 'gridSize':socketInformation.get('gridSize'), 'id':socketInformation.get('id'), 'path':path, 'barriers':socketInformation.get('stringBarriers'), 'visited':parentStringEdition })
+
+    # socketInformation['io'].emit('message', {
+    #     'path':path,
+    #     'visited': parentStringEdition,
+    #     'gridSize': socketInformation.get('gridSize'),
+    #     'barriers': socketInformation.get('stringBarriers'),
+    #     'meta':
+    #     {   'algorithm':'RRT',
+    #         'visitSize':len(parents),
+    #         'gridSize':socketInformation.get('gridSize'),
+    #         'id':socketInformation.get('id'),
+    #         'path':path,
+    #         'barriers':socketInformation.get('stringBarriers'),
+    #         'visited': parentStringEdition
+    #     }
+    # })
 
 def distanceApart (cordA, cordB):
     return abs(cordA[0]-cordB[0]) + abs(cordA[1]-cordB[1])

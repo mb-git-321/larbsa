@@ -18,6 +18,7 @@ from algorithms.a2 import astar_algorithm
 from algorithms.da2 import dual_astar_algorithm
 
 from algorithms.rrt import rrtRunner
+from algorithms.jps import jps
 
 import tracemalloc
 import socketio
@@ -158,6 +159,16 @@ def runSingleTest (algorithm='magnetic', start=(0, 0), end=(1, 1), barriers={}, 
         endTime = timer()
         (_, maxMemory) = tracemalloc.get_traced_memory()
         tracemalloc.stop()
+
+    elif algorithm == 'jps':
+        tracemalloc.start()
+        tracemalloc.take_snapshot()
+        startTime = timer()
+        ( path, visits ) = jps(start, end, originalBarriers, socketInformation=socketInformation)
+        print('path retrieved:', path)
+        endTime = timer()
+        (_, maxMemory) = tracemalloc.get_traced_memory()
+        tracemalloc.stop()        
 
     else:
         startTime = 0

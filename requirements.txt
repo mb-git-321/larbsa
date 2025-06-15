@@ -1,0 +1,7 @@
+progress
+
+requests
+
+matplotlib
+
+python-socketio

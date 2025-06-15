@@ -19,7 +19,7 @@ def findPath (start, end, came_from):
     path.append(start)
     return (path[::-1], came_from)    
 
-def astar_algorithm(grid, start, end, maxIterations=1000, socketInformation=None):
+def astar_algorithm(barriers, start, end, maxIterations=1000, socketInformation=None):
     heap = []
     tempHeap = [] if socketInformation else None
     heapq.heappush(heap, (0, start))
@@ -33,7 +33,7 @@ def astar_algorithm(grid, start, end, maxIterations=1000, socketInformation=None
         if current == end or current == None:
             break
         
-        for neighbor in get_neighbors(grid, current):
+        for neighbor in get_neighbors(barriers, current):
             new_cost = cost_so_far[current] + distance(current, neighbor)
             if neighbor not in cost_so_far or new_cost < cost_so_far[neighbor]:
                 cost_so_far[neighbor] = new_cost
@@ -72,11 +72,11 @@ def astar_algorithm(grid, start, end, maxIterations=1000, socketInformation=None
 
     return (path[::-1], came_from)
 
-def get_neighbors(grid, current):
+def get_neighbors(barriers, current):
     row, col = current
     neighbors = []
     for r, c in ((row-1, col), (row, col-1), (row+1, col), (row, col+1)):
-        if (r, c) in grid:
+        if (r, c) in barriers:
             continue
         neighbors.append((r, c))
     return neighbors
